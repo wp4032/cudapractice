@@ -1,0 +1,4 @@
+*.deb
+*.nsys-rep
+*.qdstrm
+*.sqlite
