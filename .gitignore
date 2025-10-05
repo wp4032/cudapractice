@@ -6,4 +6,7 @@
 *.nsys-rep
 *.qdstrm
 *.sqlite
+.cache
+compile_commands.json
+llvm.sh
 

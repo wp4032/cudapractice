@@ -1,3 +1,6 @@
+# CUDA Results
+- Done on Lambda Labs instance on H100 GPU PCIE
+
 # Matmul wmma
 Matrix 1024 x 1024
 Time: 0.230 ms
