@@ -1,17 +1,18 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include <cublas_v2.h>
 
-#define IDX2C(i, j, ld) (((j)*(ld))+(i))
+// About cuBLAS
+// cuBLAS is column major order 
 
-__global__ void matmul_basic(const float *A, const float *B, float *C, int N) {
+#define IDX2C(i,j,ld) (((j)*(ld))+(i))
+
+__global__ void init_matrix(float* A, float* B, int N) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-
     if (row < N && col < N) {
-        float val = 0.0f;
-        for (int k = 0; k < N; ++k)
-            val += A[row * N + k] * B[k * N + col];
-        C[row * N + col] = val;
+        A[IDX2C(row, col, N)] = 1.0f;
+        B[IDX2C(row, col, N)] = 1.0f;
     }
 }
 
@@ -24,28 +25,38 @@ int main() {
     cudaMallocManaged(&B, size);
     cudaMallocManaged(&C, size);
 
+    dim3 threads(16, 16);
+    dim3 blocks((N + threads.x - 1) / threads.x,
+                (N + threads.y - 1) / threads.y);
+
+    init_matrix<<<blocks, threads>>>(A, B, N);
+
     // initialize matrices
     for (int i = 0; i < N * N; ++i) {
         A[i] = 1.0f;
         B[i] = 1.0f;
     }
 
-    dim3 threads(16, 16);
-    dim3 blocks((N + threads.x - 1) / threads.x,
-                (N + threads.y - 1) / threads.y);
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+
+    float alpha = 1.0f, beta = 0.0f;
 
     // timing events
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
+    int repeats = 50;
     cudaEventRecord(start);
-    matmul_basic<<<blocks, threads>>>(A, B, C, N);
+    for (int i = 0; i < repeats; ++i) {
+        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, A, N, B, N, &beta, C, N);
+    }
     cudaEventRecord(stop);
-
     cudaEventSynchronize(stop);
     float ms = 0;
     cudaEventElapsedTime(&ms, start, stop);
+    ms /= repeats;
 
     // GFLOPS = (2 * N^3) / (time_in_seconds * 1e9)
     double gflops = (2.0 * N * N * N) / (ms / 1e3) / 1e9;
@@ -57,5 +68,6 @@ int main() {
     printf("C[0] = %f\n", C[0]);
 
     cudaFree(A); cudaFree(B); cudaFree(C);
+    cublasDestroy(handle);
     return 0;
 }

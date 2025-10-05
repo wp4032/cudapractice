@@ -1,4 +1,9 @@
+*
+!*.*
+!*/
+!Makefile
 *.deb
 *.nsys-rep
 *.qdstrm
 *.sqlite
+
