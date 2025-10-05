@@ -1,3 +1,8 @@
+# Matmul wmma
+Matrix 1024 x 1024
+Time: 0.230 ms
+Performance: 9.35 TFLOPS
+
 # Matmul cuBLAS
 Matrix 1024 x 1024
 Time: 5.419 ms
