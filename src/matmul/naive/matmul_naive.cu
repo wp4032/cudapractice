@@ -40,13 +40,17 @@ int main() {
     cudaEventCreate(&stop);
 
     cudaEventRecord(start);
-    matmul_basic<<<blocks, threads>>>(A, B, C, N);
+    int repeats = 50;
+    for (int i = 0; i < repeats; ++i) {
+        matmul_basic<<<blocks, threads>>>(A, B, C, N);
+    }
     cudaEventRecord(stop);
 
     cudaEventSynchronize(stop);
     float ms = 0;
     cudaEventElapsedTime(&ms, start, stop);
-
+    ms /= repeats;
+    
     // GFLOPS = (2 * N^3) / (time_in_seconds * 1e9)
     double gflops = (2.0 * N * N * N) / (ms / 1e3) / 1e9;
     printf("Matrix %d x %d\n", N, N);
